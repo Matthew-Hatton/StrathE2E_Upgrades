@@ -86,14 +86,19 @@
 # |                                                                   |
 # ---------------------------------------------------------------------
 
+####
+library(StrathE2EPolar)
+
+####
 e2ep_compare_target <- function(model1,model2){
+  library(ggplot2) # for ease
   ####
   model1 = "Barents_Sea"
   ####
   
   model1_read <- e2ep_read(model.name = model1,model.variant = "2011-2019")
   model1_code <- gsub("[^A-Z]", "", model1)
-  model1_path <- paste0(model_read1[["setup"]][["model.path"]],"/Target/annual_observed_",model1_code,"_2011-2019.csv")
+  model1_path <- paste0(model1_read[["setup"]][["model.path"]],"/Target/annual_observed_",model1_code,"_2011-2019.csv")
   target1 <- read.csv(model1_path)
   
   ####
@@ -106,7 +111,337 @@ e2ep_compare_target <- function(model1,model2){
   target2 <- read.csv(model2_path)
   
   ## group ##
+  name_map <- c(
+    # Primary production
+    "Obs_TAPP" = "Total phyt.",
+    "Obs_IAPP" = "Total ice-algae.",
+    "Obs_NP" = "New primary phyt.",
+    "Obs_KelpP" = "Kelp carbon",
+    
+    # Zooplankton & fish
+    "Obs_OmnizooP" = "Omniv.zooplankton",
+    "Obs_CarnzooP" = "Carniv.zooplankton",
+    "Obs_PFishP" = "Planktiv.fish",
+    "Obs_DFishP" = "Demersal fish",
+    
+    # Benthos
+    "Obs_BensuspP" = "Susp/dep.benthos",
+    "Obs_BencarnP" = "Carn/scav.benthos",
+    
+    # Birds and mammals
+    "Obs_birdP" = "Seabird",
+    "Obs_sealP" = "Seal",
+    "Obs_cetaP" = "Cetacean",
+    "Obs_bearP" = "Maritime mammals",
+    
+    # Larvae
+    "Obs_maxbenthslar" = "Susp/dep.benthos larv",
+    "Obs_maxbenthclar" = "Carn/scav.benthos larv",
+    
+    # Consumption
+    "Obs_Conpfishfish" = "Pel.fish by fish",
+    "Obs_Condfishfish" = "Dem.fish by fish",
+    "Obs_Conzoofish" = "Zooplankton by fish",
+    "Obs_Conzoocarnz" = "Meso-zoo by carniv.zoo.",
+    "Obs_Conbenfish" = "Benthos by fish",
+    "Obs_Contotal_bird" = "Total by birds",
+    
+    # Bird diet proportions
+    "Obs_Proppfishbird" = "Plank.fish in bird diet",
+    "Obs_Propdfishbird" = "Dem.fish in bird diet",
+    "Obs_Propmfishbird" = "Mig.fish in bird diet",
+    "Obs_Propdiscbird" = "Disc. in bird diet",
+    
+    # Seal diet
+    "Obs_Contotal_seal" = "Total by seals",
+    "Obs_Proppfishseal" = "Plank.fish in seal diet",
+    "Obs_Propdfishseal" = "Dem.fish in seal diet",
+    "Obs_Propmfishseal" = "Mig.fish in seal diet",
+    
+    # Cetaceans
+    "Obs_Contotal_ceta" = "Total by cetaceans",
+    "Obs_Proppfishceta" = "Plank.fish in cet. diet",
+    "Obs_Propdfishceta" = "Dem.fish in cet. diet",
+    "Obs_Propmfishceta" = "Mig.fish in cet. diet",
+    "Obs_Propzooceta" = "Zooplank. in cet. diet",
+    
+    # Maritime mammals
+    "Obs_Contotal_bear" = "Total by marit. mam.",
+    "Obs_Propsealbear" = "Pinnipeds in marit. mam. diet",
+    "Obs_Propcetabear" = "Cetaceans in marit. mam. diet",
+    
+    # Landings
+    "Obs_Pland_livewt" = "Plank.fish landings",
+    "Obs_Dland_livewt" = "Dem.fish landings",
+    "Obs_Mland_livewt" = "Mig.fish landings",
+    "Obs_Bsland_livewt" = "Susp/dep.benthos landings",
+    "Obs_Bcland_livewt" = "Carn/scav.benthos landings",
+    "Obs_Zcland_livewt" = "Pel.invert. landings",
+    "Obs_Slland_livewt" = "Pinniped landings",
+    "Obs_Ctland_livewt" = "Cetacean landings",
+    "Obs_Kland_livewt" = "Kelp harvest",
+    
+    # P/B ratios
+    "Obs_kelp_pb" = "Kelp P/B",
+    "Obs_benslar_pb" = "Susp/dep.benthos larv. P/B",
+    "Obs_benclar_pb" = "Carn/scav.benthos larv. P/B",
+    "Obs_bens_pb" = "Susp/dep.benthos P/B",
+    "Obs_benc_pb" = "Carn/scav.benthos P/B",
+    "Obs_omni_pb" = "Omniv.zooplankton P/B",
+    "Obs_carn_pb" = "Carniv.zooplankton P/B",
+    "Obs_fishplar_pb" = "Plank.fish larvae P/B",
+    "Obs_fishdlar_pb" = "Dem.fish larvae P/B",
+    "Obs_fishp_pb" = "Plank.fish P/B",
+    "Obs_fishd_pb" = "Dem.fish P/B",
+    "Obs_fishm_pb" = "Mig.fish P/B",
+    "Obs_bird_pb" = "Bird P/B",
+    "Obs_seal_pb" = "Seal P/B",
+    "Obs_ceta_pb" = "Cetacean P/B",
+    "Obs_bear_pb" = "Maritime mam. P/B",
+    
+    # Misc
+    "Obs_exud_C_kelp" = "Prop. kelp prod. exuded",
+    "Obs_kelp_NC" = "Kelp N/C ratio",
+    "Obs_WCSedDenitrif" = "WC sed. denitrification",
+    "Obs_IceSnowDenitrif" = "Ice snow denitrification",
+    "Obs_Dfdiscardp" = "Dem.fish discard/catch",
+    
+    # Nutrients
+    "Obs_snow_ammonia" = "Snow ammonia",
+    "Obs_ice_ammonia" = "Ice ammonia",
+    "Obs_s_x_ammonia" = "Sand porewater ammonia",
+    "Obs_d_x_ammonia" = "Mud porewater ammonia",
+    "Obs_snow_nitrate" = "Snow nitrate",
+    "Obs_ice_nitrate" = "Ice nitrate",
+    "Obs_s_x_nitrate" = "Sand porewater nitrate",
+    "Obs_d_x_nitrate" = "Mud porewater nitrate",
+    "Obs_s_x_TON" = "Sand %TON",
+    "Obs_d_x_TON" = "Mud %TON",
+    
+    # Seasonal nutrients
+    "Obs_NDJF_s_nitrate" = "Winter surf.nitrate",
+    "Obs_MJJA_s_nitrate" = "Summer surf.nitrate",
+    "Obs_NDJF_d_nitrate" = "Winter deep nitrate",
+    "Obs_MJJA_d_nitrate" = "Summer deep nitrate",
+    "Obs_NDJF_s_ammonia" = "Winter surf.ammonia",
+    "Obs_MJJA_s_ammonia" = "Summer surf.ammonia",
+    "Obs_NDJF_d_ammonia" = "Winter deep ammonia",
+    "Obs_MJJA_d_ammonia" = "Summer deep ammonia",
+    "Obs_AMJJAS_offshore_ice_alg" = "Summer chlorophyll offshore sea ice",
+    "Obs_AMJJAS_inshore_ice_alg" = "Summer chlorophyll inshore sea ice",
+    
+    # Ratios
+    "Obs_carn_io_ratio" = "Carniv.zooplankton",
+    "Obs_omni_io_ratio" = "Omniv.zooplankton",
+    "Obs_phyt_io_ratio" = "Surf.phytoplankton",
+    "Obs_nit_io_ratio" = "Surf.nitrate",
+    "Obs_amm_io_ratio" = "Surf.ammonia",
+    "Obs_pfish_io_ratio" = "Plank.fish",
+    "Obs_dfish_io_ratio" = "Dem.fish",
+    
+    # Bycatch
+    "Obs_birddisc" = "Bird by-catch",
+    "Obs_sealdisc" = "Seal by-catch",
+    "Obs_cetadisc" = "Cetacean by-catch",
+    
+    # Kelp
+    "Obs_kelp_beachcast" = "Kelp beach-cast"
+  )
+  
+  assign_group <- function(original_names, map) {
+    out <- map[original_names]
+    out[is.na(out)] <- "Unknown"
+    return(out)
+  }
+  
+  # assign
+  annualtargetnames <- assign_group(target1[,4], name_map)
+  
+  # Define all groups
+  group_map <- c(
+    # ---- Annual production rates ----
+    "Obs_KelpP" = "Annual production rates",
+    "Obs_IAPP" = "Annual production rates",
+    "Obs_TAPP" = "Annual production rates",
+    "Obs_NP" = "Annual production rates",
+    "Obs_WCSedDenitrif" = "Annual production rates",
+    "Obs_IceSnowDenitrif" = "Annual production rates",
+    
+    "Obs_OmnizooP" = "Annual production rates",
+    "Obs_CarnzooP" = "Annual production rates",
+    "Obs_BensuspP" = "Annual production rates",
+    "Obs_BencarnP" = "Annual production rates",
+    "Obs_PFishP" = "Annual production rates",
+    "Obs_DFishP" = "Annual production rates",
+    "Obs_birdP" = "Annual production rates",
+    "Obs_sealP" = "Annual production rates",
+    "Obs_cetaP" = "Annual production rates",
+    "Obs_bearP" = "Annual production rates",
+    "Obs_maxbenthslar" = "Annual production rates",
+    "Obs_maxbenthclar" = "Annual production rates",
+    
+    # ---- Annual fishery landings and by-catch ----
+    "Obs_Pland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Dland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Mland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Bsland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Bcland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Zcland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Slland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Ctland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_Kland_livewt" = "Annual fishery landings and by-catch",
+    "Obs_cetadisc" = "Annual fishery landings and by-catch",
+    "Obs_sealdisc" = "Annual fishery landings and by-catch",
+    "Obs_birddisc" = "Annual fishery landings and by-catch",
+    "Obs_Dfdiscardp" = "Annual fishery landings and by-catch",
+    
+    # ---- Annual consumption rates ----
+    "Obs_Conzoocarnz" = "Annual consumption rates",
+    "Obs_Conzoofish" = "Annual consumption rates",
+    "Obs_Conbenfish" = "Annual consumption rates",
+    "Obs_Conpfishfish" = "Annual consumption rates",
+    "Obs_Condfishfish" = "Annual consumption rates",
+    "Obs_Contotal_bird" = "Annual consumption rates",
+    "Obs_Contotal_seal" = "Annual consumption rates",
+    "Obs_Contotal_ceta" = "Annual consumption rates",
+    "Obs_Contotal_bear" = "Annual consumption rates",
+    "Obs_Proppfishbird" = "Annual consumption rates",
+    "Obs_Propdfishbird" = "Annual consumption rates",
+    "Obs_Propmfishbird" = "Annual consumption rates",
+    "Obs_Propdiscbird" = "Annual consumption rates",
+    "Obs_Proppfishseal" = "Annual consumption rates",
+    "Obs_Propdfishseal" = "Annual consumption rates",
+    "Obs_Propmfishseal" = "Annual consumption rates",
+    "Obs_Proppfishceta" = "Annual consumption rates",
+    "Obs_Propdfishceta" = "Annual consumption rates",
+    "Obs_Propmfishceta" = "Annual consumption rates",
+    "Obs_Propzooceta" = "Annual consumption rates",
+    "Obs_Propsealbear" = "Annual consumption rates",
+    "Obs_Propcetabear" = "Annual consumption rates",
+    
+    # ---- Annual PB and other ratios ----
+    "Obs_kelp_pb" = "Annual P/B and other ratios",
+    "Obs_kelp_NC" = "Annual P/B and other ratios",
+    "Obs_exud_C_kelp" = "Annual P/B and other ratios",
+    "Obs_kelp_beachcast" = "Annual P/B and other ratios",
+    "Obs_omni_pb" = "Annual P/B and other ratios",
+    "Obs_benslar_pb" = "Annual P/B and other ratios",
+    "Obs_benclar_pb" = "Annual P/B and other ratios",
+    "Obs_fishplar_pb" = "Annual P/B and other ratios",
+    "Obs_fishdlar_pb" = "Annual P/B and other ratios",
+    "Obs_carn_pb" = "Annual P/B and other ratios",
+    "Obs_bens_pb" = "Annual P/B and other ratios",
+    "Obs_benc_pb" = "Annual P/B and other ratios",
+    "Obs_fishp_pb" = "Annual P/B and other ratios",
+    "Obs_fishd_pb" = "Annual P/B and other ratios",
+    "Obs_fishm_pb" = "Annual P/B and other ratios",
+    "Obs_bird_pb" = "Annual P/B and other ratios",
+    "Obs_seal_pb" = "Annual P/B and other ratios",
+    "Obs_ceta_pb" = "Annual P/B and other ratios",
+    "Obs_bear_pb" = "Annual P/B and other ratios",
+    
+    # ---- Average nutrient concentrations ----
+    "Obs_snow_ammonia" = "Average nutrient concentrations",
+    "Obs_ice_ammonia" = "Average nutrient concentrations",
+    "Obs_s_x_ammonia" = "Average nutrient concentrations",
+    "Obs_d_x_ammonia" = "Average nutrient concentrations",
+    "Obs_snow_nitrate" = "Average nutrient concentrations",
+    "Obs_ice_nitrate" = "Average nutrient concentrations",
+    "Obs_s_x_nitrate" = "Average nutrient concentrations",
+    "Obs_d_x_nitrate" = "Average nutrient concentrations",
+    "Obs_s_x_TON" = "Average nutrient concentrations",
+    "Obs_d_x_TON" = "Average nutrient concentrations",
+    "Obs_NDJF_s_nitrate" = "Average nutrient concentrations",
+    "Obs_MJJA_s_nitrate" = "Average nutrient concentrations",
+    "Obs_NDJF_d_nitrate" = "Average nutrient concentrations",
+    "Obs_MJJA_d_nitrate" = "Average nutrient concentrations",
+    "Obs_NDJF_s_ammonia" = "Average nutrient concentrations",
+    "Obs_MJJA_s_ammonia" = "Average nutrient concentrations",
+    "Obs_NDJF_d_ammonia" = "Average nutrient concentrations",
+    "Obs_MJJA_d_ammonia" = "Average nutrient concentrations",
+    "Obs_AMJJAS_offshore_ice_alg" = "Average nutrient concentrations",
+    "Obs_AMJJAS_inshore_ice_alg" = "Average nutrient concentrations",
+    
+    # ---- Inshore:offshore ratios ----
+    "Obs_amm_io_ratio" = "Inshore:offshore ratios",
+    "Obs_nit_io_ratio" = "Inshore:offshore ratios",
+    "Obs_phyt_io_ratio" = "Inshore:offshore ratios",
+    "Obs_omni_io_ratio" = "Inshore:offshore ratios",
+    "Obs_carn_io_ratio" = "Inshore:offshore ratios",
+    "Obs_pfish_io_ratio" = "Inshore:offshore ratios",
+    "Obs_dfish_io_ratio" = "Inshore:offshore ratios",
+    "Obs_bird_io_ratio" = "Inshore:offshore ratios",
+    "Obs_seal_io_ratio" = "Inshore:offshore ratios",
+    "Obs_ceta_io_ratio" = "Inshore:offshore ratios",
+    "Obs_bear_io_ratio" = "Inshore:offshore ratios"
+  )
+  
+  assign_group <- function(original_names, map) {
+    out <- map[original_names]
+    out[is.na(out)] <- "Unknown"
+    return(out)
+  }
+
+  group_labels <- assign_group(target1[,4], group_map)
+  
+  # build dataframe
+  target1_df <- data.frame(model_annualMeasure = target1$Annual_measure,
+                          model_SD = target1$SD_of_measure,
+                          name = annualtargetnames,
+                          group = group_labels,
+                          originalName = target1$Name,
+                          model = model1)
+  
+  target2_df <- data.frame(model_annualMeasure = target2$Annual_measure,
+                           model_SD = target2$SD_of_measure,
+                           name = annualtargetnames,
+                           group = group_labels,
+                           originalName = target1$Name,
+                           model = model2)
+
+  target_df <- rbind(target1_df,target2_df)
+  
+  ggplot() +
+    geom_point(data = target_df,aes(x = model_annualMeasure,y = name,color = model), position = position_dodge(width = 1),pch = "|", cex = 3) +
+    facet_wrap(~group,nrow = 2,ncol = 3,scales = "free") +
+    theme_minimal() +
+    labs(x = NULL,y = NULL,color = NULL) +
+    theme(strip.text = element_text(face = "bold"),
+          strip.background = element_rect(color = "black",fill = NA),
+          legend.position = "top",
+          legend.text = element_text(size = 12),
+          axis.text.x = element_text(size = 8),
+          panel.grid.minor = element_blank())
+  
+  ####
+  ggplot() +
+    # Points as thin vertical lines (pch = "|", cex = 3)
+    geom_point(data = target_df,
+               aes(x = model_annualMeasure, y = name, color = model),
+               position = position_dodge(width = 1), 
+               pch = "|", cex = 3) +
+    
+    # Add horizontal error bars ± SD, dodged same way as points
+    geom_errorbarh(data = target_df,
+                   aes(y = name, 
+                       xmin = model_annualMeasure - model_SD,
+                       xmax = model_annualMeasure + model_SD,
+                       color = model),
+                   position = position_dodge(width = 1),
+                   height = 0,       # no vertical bar at ends
+                   linetype = "dashed",alpha = 0.7) +
+    
+    facet_wrap(~group, nrow = 2, ncol = 3, scales = "free") +
+    theme_minimal() +
+    labs(x = NULL, y = NULL, color = NULL) +
+    theme(strip.text = element_text(face = "bold"),
+          strip.background = element_rect(color = "black", fill = NA),
+          legend.position = "top",
+          legend.text = element_text(size = 12),
+          axis.text.x = element_text(size = 8),
+          panel.grid.minor = element_blank())
   
   
-  return(annualtargetdata)
+  
+  
 }
