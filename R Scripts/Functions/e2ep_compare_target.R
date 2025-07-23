@@ -86,24 +86,18 @@
 # |                                                                   |
 # ---------------------------------------------------------------------
 
-####
-library(StrathE2EPolar)
-
-####
 e2ep_compare_target <- function(model1,model2){
   library(ggplot2) # for ease
-  ####
-  model1 = "Barents_Sea"
+  ####TEST LINES####
+  # model1 = "Barents_Sea"
+  # model2 = "West_Greenland"
+  # library(StrathE2EPolar)
   ####
   
   model1_read <- e2ep_read(model.name = model1,model.variant = "2011-2019")
   model1_code <- gsub("[^A-Z]", "", model1)
   model1_path <- paste0(model1_read[["setup"]][["model.path"]],"/Target/annual_observed_",model1_code,"_2011-2019.csv")
   target1 <- read.csv(model1_path)
-  
-  ####
-  model2 = "West_Greenland"
-  ####
   
   model2_read <- e2ep_read(model.name = model2,model.variant = "2011-2019")
   model2_code <- gsub("[^A-Z]", "", model2)
