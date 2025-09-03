@@ -252,16 +252,9 @@ e2e_transient <- function(model,transient_years,ssp,forcing,
                                                                                csv.output = F)[,1]
     
     
-    # write.csv(Boundary_new,paste0("./Mission Atlantic/Boundary.test.",y,".",forcing,".",ssp,".csv"))
-    # write.csv(Physics_new,paste0("./Mission Atlantic/Physics.test.",y,".",forcing,".",ssp,".csv"))
-    # 
-    
     # Pull everything we need
     master[[paste0(forcing,".",ssp)]][[paste0(y)]][["All_results"]] <- results
     master[[paste0(forcing,".",ssp)]][[paste0(y)]][["Initial_Conditions"]] <- init_con
-    
-    print(results[["final.year.outputs"]][["mass_results_wholedomain"]] %>% filter(Description == "Planktivorous_fish") %>% .$Model_annual_mean)
-    print("\n")
   }
   return(master)
 }
