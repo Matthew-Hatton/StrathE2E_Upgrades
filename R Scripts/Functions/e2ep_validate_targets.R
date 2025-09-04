@@ -10,11 +10,15 @@ e2ep_validate_targets <- function(model,results){
   # add row num
   opt_used$Excel_row <- as.numeric(rownames(opt_used)) + 1
   
+  opt_used <- opt_used[order(-opt_used$ratio),]
+  
   # flag extreme ratios
   extreme_targets <- subset(opt_used, abs(ratio) > 10 | abs(ratio) < 0.1)
   
   # sort
   extreme_targets <- extreme_targets[order(-abs(extreme_targets$ratio)), ]
   
-  return(extreme_targets)
+  return(list(all_targets = opt,
+              on_targets = opt_used,
+              extremes = extreme_targets))
 }
